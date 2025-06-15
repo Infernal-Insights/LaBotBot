@@ -1,0 +1,5 @@
+python-dotenv
+playwright
+pymongo
+redis
+discord.py
