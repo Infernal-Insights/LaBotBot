@@ -1,5 +1,6 @@
 python-dotenv
 playwright
-pymongo
+pymongo[srv]
+dnspython
 redis
 discord.py
