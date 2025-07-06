@@ -19,6 +19,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
     def _check_auth(self):
         """Return True if auth disabled or Authorization header is valid."""
+        """Return True if no auth required or valid Basic Auth header present."""
         if not DASHBOARD_USER:
             return True
         auth_header = self.headers.get("Authorization")
@@ -64,10 +65,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
         html_parts.extend([
             "</ul>",
             "<h2>Products</h2>",
+
             (
                 "<table border='1'><tr>"
                 "<th>Name</th><th>Price</th><th>In Stock</th></tr>"
             )
+            "<table border='1'><tr><th>Name</th><th>Price</th><th>In Stock</th></tr>"
+
         ])
         for p in products:
             name = html.escape(p.get("name", ""))
@@ -84,6 +88,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.wfile.write(html_content.encode())
 
 
+
 def run(host="127.0.0.1", port=8000):
     server = HTTPServer((host, port), DashboardHandler)
     print(f"Serving dashboard on http://{host}:{port} ...")
@@ -91,6 +96,7 @@ def run(host="127.0.0.1", port=8000):
 
 
 if __name__ == '__main__':
+
     host = os.getenv("DASHBOARD_HOST", "127.0.0.1")
     port = int(os.getenv("DASHBOARD_PORT", "8000"))
     run(host=host, port=port)
