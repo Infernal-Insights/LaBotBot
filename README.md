@@ -29,6 +29,8 @@ Simple scripts for scraping PopMart products, listening for priority links via D
    DISCORD_NOTIFY_CHANNEL_ID=1234567890
    MAX_DAILY_BUDGET=100.0
    MONGODB_URI=mongodb+srv://<db_username>:<db_password>@cluster0.ecntfwt.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+   DASHBOARD_USER=admin
+   DASHBOARD_PASS=secret
    ```
    Replace the values with your own credentials. When using MongoDB Atlas, paste your cluster's connection string into `MONGODB_URI`.
 4. Ensure Redis and MongoDB are running and accessible. If using Atlas, whitelist your VM's IP address.
@@ -46,6 +48,11 @@ Run `python dashboard.py` to start a simple status page on `http://localhost:800
 The page refreshes automatically every 10 seconds and lists the priority links
 that the buyer bot will attempt to purchase. JSON APIs are also available at
 `/api/priority` and `/api/products`.
+If you set `DASHBOARD_USER` and `DASHBOARD_PASS` in your `.env` file, the page
+will require HTTP Basic authentication. The dashboard binds to `127.0.0.1` by
+default. To expose it remotely, set `DASHBOARD_HOST` and `DASHBOARD_PORT` in
+your environment, e.g. `DASHBOARD_HOST=64.225.91.160`. For secure remote
+access, consider tunneling the port over SSH instead of exposing it directly.
 ## Scheduling
 
 The scripts can be scheduled with cron. While logged in as `labot`, add entries using `crontab -e`:
@@ -56,5 +63,21 @@ The scripts can be scheduled with cron. While logged in as `labot`, add entries 
 
 # Run buyer bot every 10 minutes
 */10 * * * * cd /LaBotBot && /LaBotBot/.venv/bin/python buyer_bot.py >> /var/log/buyer.log 2>&1
+```
+
+## Troubleshooting
+
+If the `playwright` command is missing after a reboot, reactivate the virtual
+environment:
+
+```bash
+source .venv/bin/activate
+```
+
+Then reinstall dependencies and browsers if needed:
+
+```bash
+pip install -r requirements.txt
+playwright install
 ```
 
