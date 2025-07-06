@@ -4,6 +4,7 @@ import json
 import time
 import os
 import argparse
+import html
 
 class DashboardHandler(BaseHTTPRequestHandler):
     def _send_json(self, data):
@@ -23,7 +24,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
 
         priority = get_priority_links()
-        html = ["<html><head>",
+        html_parts = ["<html><head>",
                 "<meta http-equiv='refresh' content='10'>",
                 "<title>LaBotBot Status</title>",
                 "</head><body>",
@@ -32,9 +33,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 "<h2>Priority Links</h2>",
                 "<ul>"]
         for link in priority:
-            html.append(f"<li>{link}</li>")
-        html.extend(["</ul>", "</body></html>"])
-        html_content = "".join(html)
+            html_parts.append(f"<li>{html.escape(link)}</li>")
+        html_parts.extend(["</ul>", "</body></html>"])
+        html_content = "".join(html_parts)
         self.send_response(200)
         self.send_header('Content-Type', 'text/html')
         self.end_headers()
