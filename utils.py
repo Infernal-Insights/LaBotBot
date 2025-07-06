@@ -14,9 +14,17 @@ def try_to_buy(page, link):
 
     page.goto(link)
     print(f"Watching {link} for stock...")
+    price = page.text_content(".product__price")
+    price_value = float(price.strip().replace("$", "")) if price else 0.0
     page.wait_for_selector("button.product__button[name='add']:not([disabled])", timeout=0)
     page.click("button.product__button[name='add']")
     page.goto("https://www.popmart.com/cart")
     page.click("button[name='checkout']")
-    print(f"✅ Purchased: {link}")
     time.sleep(3)
+    return price_value
+
+
+def get_price(page, link):
+    page.goto(link)
+    price = page.text_content(".product__price")
+    return float(price.strip().replace("$", "")) if price else 0.0
