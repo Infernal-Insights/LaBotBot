@@ -2,6 +2,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from redis_db import get_priority_links, get_all_products
 import json
 import time
+import os
+import argparse
 
 class DashboardHandler(BaseHTTPRequestHandler):
     def _send_json(self, data):
@@ -38,10 +40,19 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(html_content.encode())
 
-def run(port=8000):
-    server = HTTPServer(('0.0.0.0', port), DashboardHandler)
-    print(f"Serving dashboard on http://0.0.0.0:{port} ...")
+def run(host=None, port=None):
+    if host is None:
+        host = os.getenv("DASHBOARD_HOST", "127.0.0.1")
+    if port is None:
+        port = int(os.getenv("DASHBOARD_PORT", "8000"))
+
+    server = HTTPServer((host, port), DashboardHandler)
+    print(f"Serving dashboard on http://{host}:{port} ...")
     server.serve_forever()
 
 if __name__ == '__main__':
-    run()
+    parser = argparse.ArgumentParser(description="Start the LaBotBot dashboard")
+    parser.add_argument("--host", help="Interface to bind to", default=os.getenv("DASHBOARD_HOST"))
+    parser.add_argument("--port", type=int, help="Port to listen on", default=os.getenv("DASHBOARD_PORT"))
+    args = parser.parse_args()
+    run(args.host, args.port)

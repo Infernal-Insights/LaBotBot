@@ -42,10 +42,12 @@ Simple scripts for scraping PopMart products, listening for priority links via D
 Each script loads the `.env` file for configuration.
 ## Dashboard
 
-Run `python dashboard.py` to start a simple status page on `http://localhost:8000`.
-The page refreshes automatically every 10 seconds and lists the priority links
-that the buyer bot will attempt to purchase. JSON APIs are also available at
-`/api/priority` and `/api/products`.
+Run `python dashboard.py` to start a simple status page. By default the
+dashboard binds to `http://127.0.0.1:8000`. Use the `--host` and `--port`
+options or set the `DASHBOARD_HOST` and `DASHBOARD_PORT` environment variables
+to change the interface or port. The page refreshes automatically every 10
+seconds and lists the priority links that the buyer bot will attempt to
+purchase. JSON APIs are also available at `/api/priority` and `/api/products`.
 ## Scheduling
 
 The scripts can be scheduled with cron. While logged in as `labot`, add entries using `crontab -e`:
