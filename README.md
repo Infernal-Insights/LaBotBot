@@ -27,6 +27,7 @@ Simple scripts for scraping PopMart products, listening for priority links via D
    POP_PASSWORD=your_password
    DISCORD_BOT_TOKEN=your_discord_token
    DISCORD_NOTIFY_CHANNEL_ID=1234567890
+   MAX_DAILY_BUDGET=100.0
    MONGODB_URI=mongodb+srv://<db_username>:<db_password>@cluster0.ecntfwt.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
    ```
    Replace the values with your own credentials. When using MongoDB Atlas, paste your cluster's connection string into `MONGODB_URI`.
