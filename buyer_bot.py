@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from utils import try_to_buy, get_price
 import discord
 import asyncio
-import time
 import os
 
 load_dotenv()
