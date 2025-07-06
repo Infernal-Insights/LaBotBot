@@ -39,3 +39,15 @@ Simple scripts for scraping PopMart products, listening for priority links via D
 - Buyer bot: `python buyer_bot.py`
 
 Each script loads the `.env` file for configuration.
+## Scheduling
+
+The scripts can be scheduled with cron. While logged in as `labot`, add entries using `crontab -e`:
+
+```cron
+# Run scraper every hour
+0 * * * * cd /LaBotBot && /LaBotBot/.venv/bin/python scraper.py >> /var/log/scraper.log 2>&1
+
+# Run buyer bot every 10 minutes
+*/10 * * * * cd /LaBotBot && /LaBotBot/.venv/bin/python buyer_bot.py >> /var/log/buyer.log 2>&1
+```
+
