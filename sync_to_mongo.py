@@ -7,15 +7,26 @@ from datetime import datetime
 
 load_dotenv()
 r = redis.Redis(host='localhost', port=6379, decode_responses=True)
-mongo_client = pymongo.MongoClient(os.getenv("MONGODB_URI"))
-mongo_db = mongo_client["popmart"]
-product_collection = mongo_db["products"]
 
-product_collection.create_index("url", unique=True)
-product_collection.create_index("availability.in_stock")
-product_collection.create_index("priority_score")
+product_collection = None
+
+def get_product_collection():
+    """Lazily initialize and return the MongoDB collection."""
+    global product_collection
+    if product_collection is None:
+        uri = os.getenv("MONGODB_URI")
+        if not uri:
+            raise RuntimeError("MONGODB_URI is not set")
+        client = pymongo.MongoClient(uri)
+        db = client["popmart"]
+        product_collection = db["products"]
+        product_collection.create_index("url", unique=True)
+        product_collection.create_index("availability.in_stock")
+        product_collection.create_index("priority_score")
+    return product_collection
 
 def sync_from_redis_to_mongo():
+    collection = get_product_collection()
     ids = r.zrange("product_ids", 0, -1)
     print(f"Syncing {len(ids)} products from Redis to MongoDB ...")
     for pid in ids:
@@ -47,7 +58,7 @@ def sync_from_redis_to_mongo():
             "tags": product.get("tags", "").split(",") if product.get("tags") else []
         }
 
-        product_collection.update_one(
+        collection.update_one(
             {"_id": pid},
             {"$set": product_doc, "$push": {"history": history_entry}},
             upsert=True
@@ -55,7 +66,8 @@ def sync_from_redis_to_mongo():
         print(f"Synced product {pid}")
 
 def sync_from_mongo_to_redis(limit=50):
-    cursor = product_collection.find({"availability.in_stock": True, "price": {"$lte": 30}}).limit(limit)
+    collection = get_product_collection()
+    cursor = collection.find({"availability.in_stock": True, "price": {"$lte": 30}}).limit(limit)
     count = 0
     for doc in cursor:
         pid = doc["_id"]
