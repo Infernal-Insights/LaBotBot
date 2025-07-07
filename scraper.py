@@ -2,12 +2,35 @@
 from playwright.sync_api import sync_playwright
 from redis_db import save_product
 from sync_to_mongo import sync_from_redis_to_mongo
+from dotenv import load_dotenv
+import pymongo
 import datetime
 import hashlib
 import time
+import os
+import sys
 
 def hash_id(text):
     return hashlib.md5(text.encode()).hexdigest()
+
+def check_mongo_connection():
+    load_dotenv()
+    uri = os.getenv("MONGODB_URI")
+    if not uri:
+        print("MONGODB_URI is not set.")
+        sys.exit(1)
+    try:
+        client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=5000)
+        db = client["popmart"]
+        test_col = db["connection_test"]
+        doc = {"_id": "connection_test", "ts": datetime.datetime.utcnow()}
+        test_col.insert_one(doc)
+        test_col.delete_one({"_id": "connection_test"})
+        client.close()
+        print("MongoDB connection check: SUCCESS")
+    except Exception as e:
+        print(f"MongoDB connection check FAILED: {e}")
+        sys.exit(1)
 
 def scrape():
     with sync_playwright() as p:
@@ -50,4 +73,5 @@ def scrape():
         sync_from_redis_to_mongo()
 
 if __name__ == "__main__":
+    check_mongo_connection()
     scrape()
