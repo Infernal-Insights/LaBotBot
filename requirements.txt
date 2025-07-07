@@ -3,4 +3,5 @@ playwright
 pymongo[srv]
 dnspython
 redis
+redis-server
 discord.py
