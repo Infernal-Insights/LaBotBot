@@ -22,6 +22,7 @@ def start_dashboard():
             raise
 
 
+
 def main():
     interval = int(os.getenv("RUN_INTERVAL", "3600"))
     dash_proc = Process(target=start_dashboard, daemon=True)

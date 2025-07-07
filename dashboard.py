@@ -64,10 +64,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
         html_parts.extend([
             "</ul>",
             "<h2>Products</h2>",
-            (
-                "<table border='1'><tr>"
-                "<th>Name</th><th>Price</th><th>In Stock</th></tr>"
-            )
+            "<table border='1'><tr><th>Name</th><th>Price</th><th>In Stock</th></tr>"
         ])
         for p in products:
             name = html.escape(p.get("name", ""))
@@ -82,7 +79,6 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.send_header('Content-Type', 'text/html')
         self.end_headers()
         self.wfile.write(html_content.encode())
-
 
 def run(host="127.0.0.1", port=8000):
     server = HTTPServer((host, port), DashboardHandler)
