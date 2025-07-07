@@ -9,6 +9,8 @@ import hashlib
 import time
 import os
 import sys
+import json
+from urllib.request import urlopen
 
 def hash_id(text):
     return hashlib.md5(text.encode()).hexdigest()
@@ -34,50 +36,49 @@ def check_mongo_connection():
 
 def scrape():
     print("Starting scrape for The Monsters collection ...")
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
-        page.goto("https://www.popmart.com/us/collection/11")
-        page.wait_for_load_state("networkidle")
+    data_url = "https://cdn-global.popmart.com/shop_productoncollection-11-1-1-us-en.json"
+    with urlopen(data_url) as resp:
+        collection_data = json.load(resp)
 
-        links = page.eval_on_selector_all(
-            "a.product-card-link[href*='/us/product/']",
-            "els => els.map(el => el.href)"
-        )
-        print(f"Found {len(links)} product pages")
+    products = collection_data.get("productData", [])
+    print(f"Found {len(products)} products")
 
-        for link in links:
-            try:
-                page.goto(link)
-                name = page.text_content("h1.product__title").strip()
-                print(f"Scraping: {name} -> {link}")
-                price = float(page.text_content(".product__price").strip().replace("$", ""))
-                description = page.text_content(".product__description").strip()
-                image = page.get_attribute(".product__media img", "src")
-                in_stock = not page.query_selector("button.product__button[name='add']:disabled")
+    for item in products:
+        try:
+            link = f"https://www.popmart.com/us/products/{item['id']}"
+            name = item.get("title", "")
+            description = item.get("subTitle", "")
+            price = 0.0
+            if item.get("skus"):
+                price = item["skus"][0].get("price", 0) / 100.0
+                in_stock = item["skus"][0].get("stock", {}).get("onlineStock", 0) > 0
+            else:
+                in_stock = False
+            image = item.get("bannerImages", [""])[0]
 
-                pid = hash_id(link)
-                save_product(pid, {
-                    "name": name,
-                    "url": link,
-                    "price": price,
-                    "description": description,
-                    "image": image,
-                    "in_stock": int(in_stock),
-                    "priority_score": 0,
-                    "is_priority": 0,
-                    "source": "scraped",
-                    "last_checked": datetime.datetime.utcnow().isoformat()
-                })
-                time.sleep(0.5)
+            pid = hash_id(link)
+            save_product(pid, {
+                "name": name,
+                "url": link,
+                "price": price,
+                "description": description,
+                "image": image,
+                "in_stock": int(in_stock),
+                "priority_score": 0,
+                "is_priority": 0,
+                "source": "scraped",
+                "last_checked": datetime.datetime.utcnow().isoformat()
+            })
+            time.sleep(0.1)
 
-            except Exception as e:
-                print(f"Error scraping product: {link} — {e}")
+        except Exception as e:
+            print(f"Error processing product {item.get('id')}: {e}")
 
-        browser.close()
+    try:
         sync_from_redis_to_mongo()
-        print("Scrape and sync complete.")
+    except Exception as e:
+        print(f"Mongo sync failed: {e}")
+    print("Scrape and sync complete.")
 
 if __name__ == "__main__":
     check_mongo_connection()
