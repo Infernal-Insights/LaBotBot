@@ -33,6 +33,7 @@ def check_mongo_connection():
         sys.exit(1)
 
 def scrape():
+    print("Starting scrape for The Monsters collection ...")
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context()
@@ -40,12 +41,17 @@ def scrape():
         page.goto("https://www.popmart.com/us/collection/11")
         page.wait_for_load_state("networkidle")
 
-        links = page.eval_on_selector_all("a.product-card-link[href*='/us/product/']", "els => els.map(el => el.href)")
+        links = page.eval_on_selector_all(
+            "a.product-card-link[href*='/us/product/']",
+            "els => els.map(el => el.href)"
+        )
+        print(f"Found {len(links)} product pages")
 
         for link in links:
             try:
                 page.goto(link)
                 name = page.text_content("h1.product__title").strip()
+                print(f"Scraping: {name} -> {link}")
                 price = float(page.text_content(".product__price").strip().replace("$", ""))
                 description = page.text_content(".product__description").strip()
                 image = page.get_attribute(".product__media img", "src")
@@ -71,6 +77,7 @@ def scrape():
 
         browser.close()
         sync_from_redis_to_mongo()
+        print("Scrape and sync complete.")
 
 if __name__ == "__main__":
     check_mongo_connection()
