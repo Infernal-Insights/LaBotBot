@@ -83,7 +83,6 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(html_content.encode())
 
-
 def run(host="127.0.0.1", port=8000):
     server = HTTPServer((host, port), DashboardHandler)
     print(f"Serving dashboard on http://{host}:{port} ...")
