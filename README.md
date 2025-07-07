@@ -37,11 +37,34 @@ Simple scripts for scraping PopMart products, listening for priority links via D
 
 ## Running
 
-- Scraper: `python scraper.py`
-- Discord listener: `python discord_listener.py`
-- Buyer bot: `python buyer_bot.py`
+The usual workflow is:
 
-Each script loads the `.env` file for configuration.
+1. Run the scraper to collect product data:
+   ```bash
+   python scraper.py
+   ```
+2. Optionally run the Discord listener if you want to add links via Discord:
+   ```bash
+   python discord_listener.py
+   ```
+3. Run the buyer bot to attempt purchases:
+   ```bash
+   python buyer_bot.py
+   ```
+
+Each script loads the `.env` file for configuration. If `DISCORD_BOT_TOKEN` and
+`DISCORD_NOTIFY_CHANNEL_ID` are not set, the buyer bot prints notifications to
+stdout instead of sending them to Discord.
+
+To run everything automatically, use the `run_all.py` helper:
+
+```bash
+python run_all.py
+```
+
+This script launches the dashboard in a background process, runs the scraper,
+then runs the buyer bot. It repeats this cycle every hour by default. Set the
+`RUN_INTERVAL` environment variable (in seconds) to change the interval.
 ## Dashboard
 
 Run `python dashboard.py` to start a simple status page on `http://localhost:8000`.
@@ -49,11 +72,6 @@ The page refreshes automatically every 10 seconds and lists the priority links
 that the buyer bot will attempt to purchase. JSON APIs are also available at
 `/api/priority` and `/api/products`.
 If you set `DASHBOARD_USER` and `DASHBOARD_PASS` in your `.env` file, the page
-
-will require HTTP Basic authentication. The dashboard binds to `127.0.0.1` by
-default. To expose it remotely, set `DASHBOARD_HOST` and `DASHBOARD_PORT` in
-your environment, e.g. `DASHBOARD_HOST=64.225.91.160`. For secure remote
-=======
 will require HTTP Basic authentication. Host and port can be overridden with the
 `DASHBOARD_HOST` and `DASHBOARD_PORT` environment variables. For secure remote
 access, consider tunneling the port over SSH instead of exposing it directly.
@@ -62,10 +80,11 @@ access, consider tunneling the port over SSH instead of exposing it directly.
 The scripts can be scheduled with cron. While logged in as `labot`, add entries using `crontab -e`:
 
 ```cron
-# Run scraper every hour
-0 * * * * cd /LaBotBot && /LaBotBot/.venv/bin/python scraper.py >> /var/log/scraper.log 2>&1
+# Automatically start everything at boot
+@reboot cd /LaBotBot && /LaBotBot/.venv/bin/python run_all.py >> /var/log/labotbot.log 2>&1
 
-# Run buyer bot every 10 minutes
+# If you prefer separate jobs, schedule them like this:
+0 * * * * cd /LaBotBot && /LaBotBot/.venv/bin/python scraper.py >> /var/log/scraper.log 2>&1
 */10 * * * * cd /LaBotBot && /LaBotBot/.venv/bin/python buyer_bot.py >> /var/log/buyer.log 2>&1
 ```
 
