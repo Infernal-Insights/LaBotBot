@@ -31,49 +31,68 @@ def check_mongo_connection():
         test_col.delete_one({"_id": "connection_test"})
         client.close()
         print("MongoDB connection check: SUCCESS")
+        return True
     except Exception as e:
         print(f"MongoDB connection check FAILED: {e}")
-        sys.exit(1)
+        return False
 
-def scrape():
+def scrape(min_items=50):
+    """Scrape Popmart products and store them in Redis."""
     print("Starting scrape for The Monsters collection ...")
-    data_url = "https://cdn-global.popmart.com/shop_productoncollection-11-1-1-us-en.json"
-    with urlopen(data_url) as resp:
-        collection_data = json.load(resp)
 
-    products = collection_data.get("productData", [])
-    print(f"Found {len(products)} products")
+    page = 1
+    scraped = 0
+    while scraped < min_items:
+        data_url = f"https://cdn-global.popmart.com/shop_productoncollection-11-1-{page}-us-en.json"
+        with urlopen(data_url) as resp:
+            collection_data = json.load(resp)
 
-    for item in products:
-        try:
-            link = f"https://www.popmart.com/us/products/{item['id']}"
-            name = item.get("title", "")
-            description = item.get("subTitle", "")
-            price = 0.0
-            if item.get("skus"):
-                price = item["skus"][0].get("price", 0) / 100.0
-                in_stock = item["skus"][0].get("stock", {}).get("onlineStock", 0) > 0
-            else:
-                in_stock = False
-            image = item.get("bannerImages", [""])[0]
+        products = collection_data.get("productData", [])
+        if not products:
+            break
 
-            pid = hash_id(link)
-            save_product(pid, {
-                "name": name,
-                "url": link,
-                "price": price,
-                "description": description,
-                "image": image,
-                "in_stock": int(in_stock),
-                "priority_score": 0,
-                "is_priority": 0,
-                "source": "scraped",
-                "last_checked": datetime.datetime.utcnow().isoformat()
-            })
-            time.sleep(0.1)
+        print(f"Page {page}: found {len(products)} products")
 
-        except Exception as e:
-            print(f"Error processing product {item.get('id')}: {e}")
+        for item in products:
+            try:
+                link = f"https://www.popmart.com/us/products/{item['id']}"
+                name = item.get("title", "")
+                description = item.get("subTitle", "")
+                price = 0.0
+                if item.get("skus"):
+                    price = item["skus"][0].get("price", 0) / 100.0
+                    in_stock = item["skus"][0].get("stock", {}).get("onlineStock", 0) > 0
+                else:
+                    in_stock = False
+                image = item.get("bannerImages", [""])[0]
+
+                pid = hash_id(link)
+                save_product(pid, {
+                    "name": name,
+                    "url": link,
+                    "price": price,
+                    "description": description,
+                    "image": image,
+                    "in_stock": int(in_stock),
+                    "priority_score": 0,
+                    "is_priority": 0,
+                    "source": "scraped",
+                    "last_checked": datetime.datetime.utcnow().isoformat()
+                })
+                scraped += 1
+                time.sleep(0.1)
+
+            except Exception as e:
+                print(f"Error processing product {item.get('id')}: {e}")
+
+        if scraped >= min_items:
+            break
+
+        # end for item
+
+        page += 1
+
+    print(f"Scraped {scraped} products")
 
     try:
         sync_from_redis_to_mongo()
