@@ -68,6 +68,7 @@ async def run():
             return
 
         links = get_priority_links()
+        logger.info("Loaded %d priority links", len(links))
         count = 0
         spent = 0.0
 
@@ -75,10 +76,20 @@ async def run():
             if count >= MAX_ITEMS:
                 break
 
+            logger.info("Checking %s", link)
             price = await async_get_price(page, link)
+            logger.info("Price for %s is $%.2f", link, price)
             if DAILY_BUDGET and spent + price > DAILY_BUDGET:
-                print(f"Skipping {link} — daily budget exceeded")
+                logger.info(
+                    "Skipping %s — price %.2f would exceed budget %.2f (spent %.2f)",
+                    link,
+                    price,
+                    DAILY_BUDGET,
+                    spent,
+                )
                 continue
+
+            logger.info("Attempting purchase of %s", link)
 
             price_paid, success = await async_try_to_buy(page, link)
             if success:
@@ -88,10 +99,12 @@ async def run():
                 if DISCORD_TOKEN and CHANNEL_ID:
                     notify_discord(message)
                 else:
-                    print(message)
+                    logger.info(message)
                 count += 1
             else:
                 logger.warning("Failed purchase attempt for %s", link)
+
+        logger.info("Finished run — purchased %d item(s) totaling $%.2f", count, spent)
 
         await browser.close()
 
