@@ -2,7 +2,7 @@
 import discord
 import os
 from dotenv import load_dotenv
-from redis_db import add_priority_link
+from labot.redis_db import add_priority_link
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
