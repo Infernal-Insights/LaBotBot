@@ -11,11 +11,19 @@ def login(page, username: str, password: str):
     login_url = "https://www.popmart.com/us/user/login?redirect=%2Faccount"
     page.goto(login_url, wait_until="domcontentloaded", timeout=60000)
 
-    # Dismiss privacy policy overlay if it appears
-    try:
-        page.locator("div.policy_acceptBtn__ZNU71").click(timeout=5000)
-    except Exception:
-        pass
+    # Dismiss the cookie/privacy banner if it appears. The exact class name
+    # changes occasionally, so try a few variants and fall back to a text match.
+    for selector in [
+        "div[class*='policy_acceptBtn']",
+        "div.policy_acceptBtn__ZNU71",
+        "text=ACCEPT",
+    ]:
+        try:
+            page.locator(selector).click(timeout=2000)
+            page.wait_for_selector(selector, state="detached", timeout=3000)
+            break
+        except Exception:
+            pass
 
     page.wait_for_selector("input#email", timeout=60000)
     page.fill("input#email", username)
@@ -39,9 +47,12 @@ def try_to_buy(page, link):
         price_value = float(price.strip().replace("$", "")) if price else 0.0
 
         page.wait_for_selector(
-            "button.product__button[name='add']:not([disabled])", timeout=60000
+            "button.product__button[name='add']:not([disabled]), button:has-text('ADD TO CART'):not([disabled])",
+            timeout=60000,
         )
-        page.click("button.product__button[name='add']")
+        page.locator(
+            "button.product__button[name='add']:not([disabled]), button:has-text('ADD TO CART'):not([disabled])"
+        ).first.click()
         page.goto(
             "https://www.popmart.com/cart", wait_until="domcontentloaded", timeout=60000
         )
