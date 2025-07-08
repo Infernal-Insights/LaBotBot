@@ -28,6 +28,7 @@ Simple scripts for scraping PopMart products, listening for priority links via D
    DISCORD_BOT_TOKEN=your_discord_token
    DISCORD_NOTIFY_CHANNEL_ID=1234567890
    MAX_DAILY_BUDGET=100.0
+   MAX_ITEMS=6
    MONGODB_USERNAME=db_username
    MONGODB_PASSWORD=db_password
    MONGODB_CLUSTER=cluster0.ecntfwt.mongodb.net
@@ -58,6 +59,7 @@ The usual workflow is:
 Each script loads the `.env` file for configuration. If `DISCORD_BOT_TOKEN` and
 `DISCORD_NOTIFY_CHANNEL_ID` are not set, the buyer bot prints notifications to
 stdout instead of sending them to Discord.
+The buyer bot also logs its actions to `buyer_bot.log` for later review.
 
 To run everything automatically, use the `run_all.py` helper:
 
