@@ -1,7 +1,7 @@
 
 from playwright.sync_api import sync_playwright
 from redis_db import save_product
-from sync_to_mongo import sync_from_redis_to_mongo
+from sync_to_mongo import sync_from_redis_to_mongo, _build_mongo_uri
 from dotenv import load_dotenv
 import pymongo
 import datetime
@@ -17,9 +17,10 @@ def hash_id(text):
 
 def check_mongo_connection():
     load_dotenv()
-    uri = os.getenv("MONGODB_URI")
-    if not uri:
-        print("MONGODB_URI is not set.")
+    try:
+        uri = _build_mongo_uri()
+    except RuntimeError as e:
+        print(e)
         sys.exit(1)
     try:
         client = pymongo.MongoClient(uri, serverSelectionTimeoutMS=5000)
