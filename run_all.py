@@ -5,6 +5,7 @@ from multiprocessing import Process
 from dashboard import run as run_dashboard
 from scraper import scrape
 from buyer_bot import run as run_buyer
+import asyncio
 
 
 def start_dashboard():
@@ -19,7 +20,7 @@ def main():
     dash_proc.start()
     while True:
         scrape()
-        run_buyer()
+        asyncio.run(run_buyer())
         time.sleep(interval)
 
 

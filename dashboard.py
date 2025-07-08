@@ -1,5 +1,5 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from redis_db import get_priority_links, get_all_products
+from labot.redis_db import get_priority_links, get_all_products
 import json
 import time
 import html

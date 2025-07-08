@@ -1,19 +1,27 @@
-
-from playwright.sync_api import sync_playwright
-from redis_db import save_product
-from sync_to_mongo import sync_from_redis_to_mongo, _build_mongo_uri
+from labot.redis_db import save_product
+from labot.sync_to_mongo import sync_from_redis_to_mongo, _build_mongo_uri
 from dotenv import load_dotenv
 import pymongo
 import datetime
-import hashlib
 import time
 import os
 import sys
 import json
 from urllib.request import urlopen
+from urllib.error import URLError
+from labot.utils import hash_id
 
-def hash_id(text):
-    return hashlib.md5(text.encode()).hexdigest()
+def fetch_json_with_retry(url, retries=3, delay=2):
+    """Fetch JSON data from ``url`` with basic retry logic."""
+    for attempt in range(1, retries + 1):
+        try:
+            with urlopen(url) as resp:
+                return json.load(resp)
+        except URLError as e:
+            print(f"Error fetching {url}: {e}. Retry {attempt}/{retries}")
+            if attempt == retries:
+                raise
+            time.sleep(delay)
 
 def check_mongo_connection():
     load_dotenv()
@@ -44,8 +52,11 @@ def scrape(min_items=50):
     scraped = 0
     while scraped < min_items:
         data_url = f"https://cdn-global.popmart.com/shop_productoncollection-11-1-{page}-us-en.json"
-        with urlopen(data_url) as resp:
-            collection_data = json.load(resp)
+        try:
+            collection_data = fetch_json_with_retry(data_url)
+        except Exception:
+            print("Giving up on fetching page", page)
+            break
 
         products = collection_data.get("productData", [])
         if not products:

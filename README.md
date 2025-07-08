@@ -2,6 +2,10 @@
 
 Simple scripts for scraping PopMart products, listening for priority links via Discord and attempting to purchase items automatically.
 
+Key features:
+- Uses asynchronous Playwright API for faster purchasing
+- Simple dashboard and Redis/MongoDB synchronization
+
 ## Requirements
 
 - Python 3.10+
@@ -21,7 +25,10 @@ Simple scripts for scraping PopMart products, listening for priority links via D
    pip install -r requirements.txt
    playwright install
    ```
-3. Create a `.env` file in this directory with the following variables:
+3. The reusable modules now live under the `labot` package. Scripts in this
+   repository import from `labot.*`.
+
+4. Create a `.env` file in this directory with the following variables:
    ```ini
    POP_USERNAME=your_username
    POP_PASSWORD=your_password
@@ -67,6 +74,16 @@ To run everything automatically, use the `run_all.py` helper:
 python run_all.py
 ```
 
+### Running the Tests
+
+Unit tests live in the `tests/` directory and can be executed with:
+
+```bash
+python -m unittest discover
+```
+
+Tests cover utility helpers and the Mongo URI builder.
+
 This script launches the dashboard in a background process, runs the scraper,
 then runs the buyer bot. It repeats this cycle every hour by default. Set the
 `RUN_INTERVAL` environment variable (in seconds) to change the interval.
@@ -80,7 +97,9 @@ If you set `DASHBOARD_USER` and `DASHBOARD_PASS` in your `.env` file, the page
 will require HTTP Basic authentication. The dashboard binds to `127.0.0.1` by
 default. To expose it remotely, set `DASHBOARD_HOST` and `DASHBOARD_PORT` in
 your environment, e.g. `DASHBOARD_HOST=64.225.91.160`. For secure remote
-access, consider tunneling the port over SSH instead of exposing it directly.
+access, run it behind an HTTPS proxy or tunnel the port over SSH instead of
+exposing it directly. The buyer bot log file is created with permissions `600`
+to keep its contents private.
 ## Scheduling
 
 The scripts can be scheduled with cron. While logged in as `labot`, add entries using `crontab -e`:

@@ -1,17 +1,23 @@
-from playwright.sync_api import sync_playwright
-from redis_db import get_priority_links
+from playwright.async_api import async_playwright
+from labot.redis_db import get_priority_links
 from dotenv import load_dotenv
-from utils import try_to_buy, get_price, login
+from labot.utils import async_try_to_buy, async_get_price, async_login
 import discord
 import asyncio
 import logging
 import os
 
+file_handler = logging.FileHandler("buyer_bot.log")
+try:
+    os.chmod("buyer_bot.log", 0o600)
+except OSError:
+    pass
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(message)s",
     handlers=[
-        logging.FileHandler("buyer_bot.log"),
+        file_handler,
         logging.StreamHandler(),
     ],
 )
@@ -36,25 +42,25 @@ def notify_discord(message):
         await client.close()
     asyncio.run(send())
 
-def run():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(
+async def run():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context(
             ignore_https_errors=True,
             user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
             bypass_csp=True,
         )
         context.set_default_timeout(60000)
-        context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});")
-        page = context.new_page()
+        await context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined});")
+        page = await context.new_page()
 
         if USERNAME and PASSWORD:
             logger.info("Logging in as %s", USERNAME)
             try:
-                login(page, USERNAME, PASSWORD)
+                await async_login(page, USERNAME, PASSWORD)
             except Exception as e:
                 logger.error("Login failed: %s", e)
-                browser.close()
+                await browser.close()
                 return
         else:
             logger.error("POP_USERNAME or POP_PASSWORD not set")
@@ -69,12 +75,12 @@ def run():
             if count >= MAX_ITEMS:
                 break
 
-            price = get_price(page, link)
+            price = await async_get_price(page, link)
             if DAILY_BUDGET and spent + price > DAILY_BUDGET:
                 print(f"Skipping {link} — daily budget exceeded")
                 continue
 
-            price_paid, success = try_to_buy(page, link)
+            price_paid, success = await async_try_to_buy(page, link)
             if success:
                 spent += price_paid
                 message = f"✅ Purchased: {link} for ${price_paid}"
@@ -87,7 +93,7 @@ def run():
             else:
                 logger.warning("Failed purchase attempt for %s", link)
 
-        browser.close()
+        await browser.close()
 
 if __name__ == "__main__":
-    run()
+    asyncio.run(run())
