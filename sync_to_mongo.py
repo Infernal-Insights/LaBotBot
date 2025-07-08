@@ -8,15 +8,29 @@ from datetime import datetime
 load_dotenv()
 r = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
+
+def _build_mongo_uri() -> str:
+    """Construct the MongoDB URI from individual environment variables."""
+    username = os.getenv("MONGODB_USERNAME")
+    password = os.getenv("MONGODB_PASSWORD")
+    cluster = os.getenv("MONGODB_CLUSTER")
+    database = os.getenv("MONGODB_DATABASE")
+
+    if not all([username, password, cluster, database]):
+        raise RuntimeError("MongoDB credentials are not fully set")
+
+    return (
+        f"mongodb+srv://{username}:{password}@{cluster}/"
+        f"{database}?retryWrites=true&w=majority"
+    )
+
 product_collection = None
 
 def get_product_collection():
     """Lazily initialize and return the MongoDB collection."""
     global product_collection
     if product_collection is None:
-        uri = os.getenv("MONGODB_URI")
-        if not uri:
-            raise RuntimeError("MONGODB_URI is not set")
+        uri = _build_mongo_uri()
         client = pymongo.MongoClient(uri)
         db = client["popmart"]
         product_collection = db["products"]
