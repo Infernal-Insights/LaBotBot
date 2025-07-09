@@ -2,6 +2,20 @@ import redis
 
 r = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
+def publish_event(message: str, channel: str = "bot_events") -> None:
+    """Publish a one-off message to the given Redis pubsub channel."""
+    try:
+        r.publish(channel, message)
+    except Exception:
+        # Ignore Redis errors so callers don't fail if Redis is down
+        pass
+
+def get_pubsub(channel: str = "bot_events"):
+    """Return a PubSub instance subscribed to the given channel."""
+    pubsub = r.pubsub()
+    pubsub.subscribe(channel)
+    return pubsub
+
 def save_product(pid, data):
     r.hset(f"product:{pid}", mapping=data)
     r.zadd("product_ids", {pid: 0})
