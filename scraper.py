@@ -1,4 +1,4 @@
-from labot.redis_db import save_product
+from labot.redis_db import save_product, r, publish_event
 from labot.sync_to_mongo import sync_from_redis_to_mongo, _build_mongo_uri
 from dotenv import load_dotenv
 import pymongo
@@ -47,6 +47,7 @@ def check_mongo_connection():
 def scrape(min_items=50):
     """Scrape Popmart products and store them in Redis."""
     print("Starting scrape for The Monsters collection ...")
+    publish_event("Scraper started")
 
     page = 1
     scraped = 0
@@ -78,6 +79,8 @@ def scrape(min_items=50):
                 image = item.get("bannerImages", [""])[0]
 
                 pid = hash_id(link)
+                existed = r.exists(f"product:{pid}")
+                prev_stock = r.hget(f"product:{pid}", "in_stock") if existed else None
                 save_product(pid, {
                     "name": name,
                     "url": link,
@@ -90,6 +93,10 @@ def scrape(min_items=50):
                     "source": "scraped",
                     "last_checked": datetime.datetime.utcnow().isoformat()
                 })
+                if not existed:
+                    publish_event(f"New product: {name} - {link}")
+                elif prev_stock == '0' and in_stock:
+                    publish_event(f"Back in stock: {name} - {link}")
                 scraped += 1
                 time.sleep(0.1)
 
@@ -104,12 +111,14 @@ def scrape(min_items=50):
         page += 1
 
     print(f"Scraped {scraped} products")
+    publish_event(f"Scraped {scraped} products")
 
     try:
         sync_from_redis_to_mongo()
     except Exception as e:
         print(f"Mongo sync failed: {e}")
     print("Scrape and sync complete.")
+    publish_event("Scrape and sync complete")
 
 if __name__ == "__main__":
     check_mongo_connection()

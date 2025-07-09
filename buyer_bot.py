@@ -1,5 +1,5 @@
 from playwright.async_api import async_playwright
-from labot.redis_db import get_priority_links
+from labot.redis_db import get_priority_links, publish_event
 from dotenv import load_dotenv
 from labot.utils import async_try_to_buy, async_get_price, async_login
 import discord
@@ -58,8 +58,10 @@ async def run():
             logger.info("Logging in as %s", USERNAME)
             try:
                 await async_login(page, USERNAME, PASSWORD)
+                publish_event("Buyer bot logged in")
             except Exception as e:
                 logger.error("Login failed: %s", e)
+                publish_event(f"Login failed: {e}")
                 await browser.close()
                 return
         else:
@@ -69,6 +71,7 @@ async def run():
 
         links = get_priority_links()
         logger.info("Loaded %d priority links", len(links))
+        publish_event(f"Loaded {len(links)} priority links")
         count = 0
         spent = 0.0
 
@@ -77,6 +80,7 @@ async def run():
                 break
 
             logger.info("Checking %s", link)
+            publish_event(f"Checking {link}")
             price = await async_get_price(page, link)
             logger.info("Price for %s is $%.2f", link, price)
             if DAILY_BUDGET and spent + price > DAILY_BUDGET:
@@ -90,12 +94,14 @@ async def run():
                 continue
 
             logger.info("Attempting purchase of %s", link)
+            publish_event(f"Attempting to buy {link}")
 
             price_paid, success = await async_try_to_buy(page, link)
             if success:
                 spent += price_paid
                 message = f"✅ Purchased: {link} for ${price_paid}"
                 logger.info(message)
+                publish_event(message)
                 if DISCORD_TOKEN and CHANNEL_ID:
                     notify_discord(message)
                 else:
@@ -103,6 +109,7 @@ async def run():
                 count += 1
             else:
                 logger.warning("Failed purchase attempt for %s", link)
+                publish_event(f"❌ Failed purchase for {link}")
 
         logger.info("Finished run — purchased %d item(s) totaling $%.2f", count, spent)
 
