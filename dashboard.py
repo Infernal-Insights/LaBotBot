@@ -174,7 +174,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
                     document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
                     document.getElementById(tab).classList.add('active');
-                    const link = document.querySelector(`nav a[data-tab="${tab}"]`);
+                    const link = document.querySelector(`nav a[data-tab="${{tab}}"]`);
                     if (link) link.classList.add('active');
                 }}
                 window.onload = () => show('products');
