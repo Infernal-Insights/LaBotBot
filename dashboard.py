@@ -1,5 +1,7 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from labot.redis_db import get_priority_links, get_all_products
+from labot.sync_to_mongo import sync_from_mongo_to_redis
+import subprocess
 import json
 import time
 import html
@@ -8,6 +10,39 @@ import os
 
 DASHBOARD_USER = os.getenv("DASHBOARD_USER")
 DASHBOARD_PASS = os.getenv("DASHBOARD_PASS")
+
+
+def fetch_products():
+    """Return products from Redis or fall back to MongoDB."""
+    products = get_all_products()
+    if not products:
+        try:
+            sync_from_mongo_to_redis(limit=50)
+            products = get_all_products()
+        except Exception as e:
+            print(f"Mongo fallback failed: {e}")
+    return products
+
+
+def read_buyer_logs(lines=20):
+    """Return the last N lines of the buyer bot log."""
+    log_path = "buyer_bot.log"
+    if not os.path.exists(log_path):
+        return "buyer_bot.log not found"
+    try:
+        with open(log_path, "r") as f:
+            return "".join(f.readlines()[-lines:])
+    except Exception as e:
+        return f"Error reading log: {e}"
+
+
+def is_process_running(pattern: str) -> bool:
+    """Check if a process with the given pattern is running."""
+    try:
+        subprocess.run(["pgrep", "-f", pattern], check=True, stdout=subprocess.DEVNULL)
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
@@ -42,42 +77,80 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_json(links)
             return
         elif self.path == '/api/products':
-            products = get_all_products()
+            products = fetch_products()
             self._send_json(products)
+            return
+        elif self.path == '/api/logs':
+            self._send_json({'logs': read_buyer_logs()})
             return
 
         priority = get_priority_links()
-        products = get_all_products()
+        products = fetch_products()
+        logs = read_buyer_logs()
+        status = {
+            "buyer_bot": "Running" if is_process_running("buyer_bot.py") else "Stopped",
+            "scraper": "Running" if is_process_running("scraper.py") else "Stopped",
+        }
 
-        html_parts = [
-            "<html><head>",
-            "<meta http-equiv='refresh' content='10'>",
-            "<title>LaBotBot Status</title>",
-            "</head><body>",
-            "<h1>LaBotBot Status</h1>",
-            f"<p>Updated: {time.ctime()}</p>",
-            "<h2>Priority Links</h2>",
-            "<ul>"
-        ]
-        for link in priority:
-            html_parts.append(f"<li>{html.escape(link)}</li>")
-        html_parts.extend([
-            "</ul>",
-            "<h2>Products</h2>",
-            (
-                "<table border='1'><tr>"
-                "<th>Name</th><th>Price</th><th>In Stock</th></tr>"
-            )
-        ])
-        for p in products:
-            name = html.escape(p.get("name", ""))
-            price = p.get("price", "")
-            stock = "Yes" if p.get("in_stock") == '1' else "No"
-            html_parts.append(
-                f"<tr><td>{name}</td><td>${price}</td><td>{stock}</td></tr>"
-            )
-        html_parts.extend(["</table>", "</body></html>"])
-        html_content = "".join(html_parts)
+        product_rows = "".join(
+            f"<tr><td>{html.escape(p.get('name', ''))}</td>"
+            f"<td>${p.get('price', '')}</td>"
+            f"<td>{'Yes' if p.get('in_stock') == '1' else 'No'}</td></tr>"
+            for p in products
+        )
+        priority_items = "".join(f"<li>{html.escape(l)}</li>" for l in priority)
+
+        html_content = f"""
+        <html>
+        <head>
+            <meta http-equiv='refresh' content='30'>
+            <title>LaBotBot Status</title>
+            <style>
+                body {{ font-family: sans-serif; background: #f4f4f4; padding: 20px; }}
+                table {{ border-collapse: collapse; width: 100%; }}
+                th, td {{ padding: 8px 12px; border: 1px solid #ccc; }}
+                nav a {{ margin-right: 1em; cursor: pointer; color: #00f; }}
+                section {{ display: none; }}
+                section.active {{ display: block; }}
+                pre {{ background: #222; color: #eee; padding: 10px; overflow:auto; }}
+            </style>
+            <script>
+                function show(tab) {{
+                    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+                    document.getElementById(tab).classList.add('active');
+                }}
+                window.onload = function() {{ show('products'); }};
+            </script>
+        </head>
+        <body>
+            <h1>LaBotBot Status</h1>
+            <p>Updated: {time.ctime()}</p>
+            <nav>
+                <a onclick=\"show('products')\">Products</a>
+                <a onclick=\"show('logs')\">Logs</a>
+            </nav>
+            <section id='products' class='active'>
+                <h2>Priority Links</h2>
+                <ul>{priority_items}</ul>
+                <h2>Products</h2>
+                <table>
+                    <tr><th>Name</th><th>Price</th><th>In Stock</th></tr>
+                    {product_rows}
+                </table>
+            </section>
+            <section id='logs'>
+                <pre>{html.escape(logs)}</pre>
+            </section>
+            <div class='status'>
+                <h2>Service Status</h2>
+                <ul>
+                    <li>Buyer Bot: {status['buyer_bot']}</li>
+                    <li>Scraper: {status['scraper']}</li>
+                </ul>
+            </div>
+        </body>
+        </html>
+        """
         self.send_response(200)
         self.send_header('Content-Type', 'text/html')
         self.end_headers()
