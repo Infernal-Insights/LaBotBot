@@ -104,30 +104,89 @@ class DashboardHandler(BaseHTTPRequestHandler):
         <html>
         <head>
             <meta http-equiv='refresh' content='30'>
+            <meta name='viewport' content='width=device-width, initial-scale=1'>
             <title>LaBotBot Status</title>
             <style>
-                body {{ font-family: sans-serif; background: #f4f4f4; padding: 20px; }}
-                table {{ border-collapse: collapse; width: 100%; }}
-                th, td {{ padding: 8px 12px; border: 1px solid #ccc; }}
-                nav a {{ margin-right: 1em; cursor: pointer; color: #00f; }}
+                body {{
+                    font-family: 'Segoe UI', Tahoma, sans-serif;
+                    background: linear-gradient(135deg, #f0f4f7, #d9e2ec);
+                    color: #333;
+                    padding: 20px;
+                }}
+                .container {{
+                    max-width: 900px;
+                    margin: auto;
+                    background: #fff;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    border-radius: 8px;
+                    padding: 20px;
+                }}
+                nav {{
+                    margin: 20px 0;
+                    text-align: center;
+                }}
+                nav a {{
+                    margin: 0 10px;
+                    padding: 10px 15px;
+                    text-decoration: none;
+                    border-radius: 4px;
+                    background: #3498db;
+                    color: #fff;
+                    transition: background .3s;
+                    cursor: pointer;
+                }}
+                nav a:hover, nav a.active {{
+                    background: #2980b9;
+                }}
                 section {{ display: none; }}
                 section.active {{ display: block; }}
-                pre {{ background: #222; color: #eee; padding: 10px; overflow:auto; }}
+                table {{
+                    width: 100%;
+                    border-collapse: collapse;
+                }}
+                th, td {{
+                    padding: 12px 15px;
+                    border-bottom: 1px solid #ddd;
+                }}
+                tr:nth-child(even) {{ background: #f9f9f9; }}
+                ul {{ list-style: none; padding: 0; }}
+                ul li {{
+                    padding: 8px 10px;
+                    margin: 5px 0;
+                    background: #ecf0f1;
+                    border-radius: 4px;
+                }}
+                .status ul li {{
+                    background: none;
+                    padding: 4px 0;
+                }}
+                pre {{
+                    background: #2d2d2d;
+                    color: #f8f8f2;
+                    padding: 15px;
+                    border-radius: 4px;
+                    max-height: 400px;
+                    overflow: auto;
+                }}
             </style>
             <script>
                 function show(tab) {{
                     document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+                    document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
                     document.getElementById(tab).classList.add('active');
+                    const link = document.querySelector(`nav a[data-tab="${tab}"]`);
+                    if (link) link.classList.add('active');
                 }}
-                window.onload = function() {{ show('products'); }};
+                window.onload = () => show('products');
             </script>
         </head>
         <body>
+        <div class='container'>
             <h1>LaBotBot Status</h1>
             <p>Updated: {time.ctime()}</p>
             <nav>
-                <a onclick=\"show('products')\">Products</a>
-                <a onclick=\"show('logs')\">Logs</a>
+                <a data-tab='products' onclick=\"show('products')\">Products</a>
+                <a data-tab='logs' onclick=\"show('logs')\">Logs</a>
             </nav>
             <section id='products' class='active'>
                 <h2>Priority Links</h2>
@@ -148,6 +207,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     <li>Scraper: {status['scraper']}</li>
                 </ul>
             </div>
+        </div>
         </body>
         </html>
         """
