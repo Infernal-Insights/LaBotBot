@@ -21,6 +21,17 @@ def fetch_products():
             products = get_all_products()
         except Exception as e:
             print(f"Mongo fallback failed: {e}")
+    # Filter out items that have both a blank name and blank price
+    def is_blank(value: str) -> bool:
+        return value is None or str(value).strip() == ""
+
+    filtered = []
+    for p in products:
+        if hasattr(p, "get"):
+            if is_blank(p.get("name")) and is_blank(p.get("price")):
+                continue
+        filtered.append(p)
+    products = filtered
     return products
 
 

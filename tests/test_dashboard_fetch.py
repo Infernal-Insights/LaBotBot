@@ -22,5 +22,20 @@ class TestFetchProducts(unittest.TestCase):
             sync.assert_called_once()
             self.assertEqual(gap.call_count, 2)
 
+    def test_blank_items_filtered(self):
+        products = [
+            {'name': '', 'price': ''},
+            {'name': 'A', 'price': '10'},
+            {'name': '', 'price': '5'},
+            {'name': 'B', 'price': ''},
+        ]
+        with mock.patch('dashboard.get_all_products', return_value=products):
+            result = dashboard.fetch_products()
+        self.assertEqual(result, [
+            {'name': 'A', 'price': '10'},
+            {'name': '', 'price': '5'},
+            {'name': 'B', 'price': ''},
+        ])
+
 if __name__ == '__main__':
     unittest.main()
