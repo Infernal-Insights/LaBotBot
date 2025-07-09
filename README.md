@@ -89,10 +89,13 @@ then runs the buyer bot. It repeats this cycle every hour by default. Set the
 `RUN_INTERVAL` environment variable (in seconds) to change the interval.
 ## Dashboard
 
-Run `python dashboard.py` to start a simple status page on `http://localhost:8000`.
-The page refreshes automatically every 10 seconds and lists the priority links
-that the buyer bot will attempt to purchase. JSON APIs are also available at
-`/api/priority` and `/api/products`.
+Run `python dashboard.py` to start a status page on `http://localhost:8000`.
+The dashboard now falls back to MongoDB if Redis has no product data and
+displays two tabs: **Products** and **Logs**. The Products tab lists all
+products as well as any priority links. The Logs tab shows the latest output
+from `buyer_bot.log` and indicates whether the buyer bot and scraper processes
+are running.
+JSON APIs remain available at `/api/priority`, `/api/products` and `/api/logs`.
 If you set `DASHBOARD_USER` and `DASHBOARD_PASS` in your `.env` file, the page
 will require HTTP Basic authentication. The dashboard binds to `127.0.0.1` by
 default. To expose it remotely, set `DASHBOARD_HOST` and `DASHBOARD_PORT` in
