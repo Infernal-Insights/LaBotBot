@@ -14,7 +14,11 @@ DASHBOARD_PASS = os.getenv("DASHBOARD_PASS")
 
 def fetch_products():
     """Return products from Redis or fall back to MongoDB."""
-    products = get_all_products()
+    try:
+        products = get_all_products()
+    except Exception as e:
+        print(f"Redis error fetching products: {e}")
+        products = []
     if not products:
         try:
             sync_from_mongo_to_redis(limit=50)
@@ -85,19 +89,35 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         if self.path == '/api/priority':
-            links = get_priority_links()
+            try:
+                links = get_priority_links()
+            except Exception as e:
+                print(f"Error fetching priority links: {e}")
+                links = []
             self._send_json(links)
             return
         elif self.path == '/api/products':
-            products = fetch_products()
+            try:
+                products = fetch_products()
+            except Exception as e:
+                print(f"Error fetching products: {e}")
+                products = []
             self._send_json(products)
             return
         elif self.path == '/api/logs':
             self._send_json({'logs': read_buyer_logs()})
             return
 
-        priority = get_priority_links()
-        products = fetch_products()
+        try:
+            priority = get_priority_links()
+        except Exception as e:
+            print(f"Error fetching priority links: {e}")
+            priority = []
+        try:
+            products = fetch_products()
+        except Exception as e:
+            print(f"Error fetching products: {e}")
+            products = []
         logs = read_buyer_logs()
         status = {
             "buyer_bot": "Running" if is_process_running("buyer_bot.py") else "Stopped",
