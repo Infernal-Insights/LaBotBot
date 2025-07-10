@@ -6,6 +6,7 @@
     --text: #333;
 }
 
+
 .page-banner {
     background: #f5e9ff;
     font-family: 'Comic Sans MS', 'Trebuchet MS', cursive;
@@ -14,6 +15,7 @@
     padding: 1rem;
     font-size: 2rem;
 }
+
 
 body {
     margin: 0;
