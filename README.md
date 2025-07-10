@@ -103,6 +103,13 @@ your environment, e.g. `DASHBOARD_HOST=64.225.91.160`. For secure remote
 access, run it behind an HTTPS proxy or tunnel the port over SSH instead of
 exposing it directly. The buyer bot log file is created with permissions `600`
 to keep its contents private.
+
+### Kawaii Dashboard Theme
+
+The `cute_site/` directory contains a lightweight HTML/CSS/JS frontend that
+fetches data from the dashboard APIs and displays it with a pastel color scheme.
+Run `python dashboard.py` and open `cute_site/index.html` in your browser to see
+the more polished, mobile‑friendly interface.
 ## Scheduling
 
 The scripts can be scheduled with cron. While logged in as `labot`, add entries using `crontab -e`:
