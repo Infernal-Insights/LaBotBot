@@ -66,7 +66,8 @@ The usual workflow is:
 Each script loads the `.env` file for configuration. If `DISCORD_BOT_TOKEN` and
 `DISCORD_NOTIFY_CHANNEL_ID` are not set, the buyer bot prints notifications to
 stdout instead of sending them to Discord.
-The buyer bot also logs its actions to `buyer_bot.log` for later review.
+Logs are written to a fixed `buyer_bot.log` file located in the repository
+root (defined by the `LOG_PATH` constant) for later review.
 
 To run everything automatically, use the `run_all.py` helper:
 
@@ -93,16 +94,16 @@ Run `python dashboard.py` to start a status page on `http://localhost:8000`.
 The dashboard now falls back to MongoDB if Redis has no product data and
 displays two tabs: **Products** and **Logs**. The Products tab lists all
 products as well as any priority links. The Logs tab shows the latest output
-from `buyer_bot.log` and indicates whether the buyer bot and scraper processes
-are running.
+from the same `buyer_bot.log` file and indicates whether the buyer bot and
+scraper processes are running.
 JSON APIs remain available at `/api/priority`, `/api/products` and `/api/logs`.
 If you set `DASHBOARD_USER` and `DASHBOARD_PASS` in your `.env` file, the page
 will require HTTP Basic authentication. The dashboard binds to `127.0.0.1` by
 default. To expose it remotely, set `DASHBOARD_HOST` and `DASHBOARD_PORT` in
 your environment, e.g. `DASHBOARD_HOST=64.225.91.160`. For secure remote
 access, run it behind an HTTPS proxy or tunnel the port over SSH instead of
-exposing it directly. The buyer bot log file is created with permissions `600`
-to keep its contents private.
+exposing it directly. The buyer bot log file is created at that fixed path with
+permissions `600` to keep its contents private.
 
 ### Kawaii Dashboard Theme
 
