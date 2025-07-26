@@ -7,9 +7,11 @@ import asyncio
 import logging
 import os
 
-file_handler = logging.FileHandler("buyer_bot.log")
+LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "buyer_bot.log")
+
+file_handler = logging.FileHandler(LOG_PATH)
 try:
-    os.chmod("buyer_bot.log", 0o600)
+    os.chmod(LOG_PATH, 0o600)
 except OSError:
     pass
 

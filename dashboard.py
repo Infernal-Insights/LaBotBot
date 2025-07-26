@@ -8,6 +8,8 @@ import html
 import base64
 import os
 
+LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "buyer_bot.log")
+
 DASHBOARD_USER = os.getenv("DASHBOARD_USER")
 DASHBOARD_PASS = os.getenv("DASHBOARD_PASS")
 
@@ -41,7 +43,7 @@ def fetch_products():
 
 def read_buyer_logs(lines=20):
     """Return the last N lines of the buyer bot log."""
-    log_path = "buyer_bot.log"
+    log_path = LOG_PATH
     if not os.path.exists(log_path):
         return "buyer_bot.log not found"
     try:
